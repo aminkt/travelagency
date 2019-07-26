@@ -1,0 +1,28 @@
+version: "2"
+services:
+  api:
+    image: repo.treescale.com/aminkt/travelagency-api:latest
+    container_name: "travel-agency-api"
+    tty: true
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx:/etc/nginx/sites-enabled
+      - ./uploads:/app/api/upload
+    depends_on:
+      - mysql
+    links:
+      - mysql
+  mysql:
+    container_name: "travel-agency-mysql"
+    image: mysql:5.7.23
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: travelagency
+      MYSQL_USER: tvlagency
+      MYSQL_PASSWORD: PP5mCrY7^>/XbNnd
+      MYSQL_ROOT_PASSWORD: root
+

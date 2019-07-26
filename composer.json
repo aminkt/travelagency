@@ -1,0 +1,58 @@
+{
+  "name": "aminkt/yii2-app-api",
+  "description": "Yii 2 Api Project Template",
+  "keywords": [
+    "yii2",
+    "framework",
+    "api",
+    "project template"
+  ],
+  "homepage": "http://www.github.com/aminkt/yii2-app-api",
+  "type": "project",
+  "license": "BSD-3-Clause",
+  "support": {
+    "issues": "https://github.com/aminkt/yii2-app-api/issues?state=open",
+    "wiki": "http://www.yiiframework.com/wiki/",
+    "source": "https://github.com/aminkt/yii2-app-api"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "php": ">=7.1",
+    "ext-mysqli": "*",
+    "ext-mongodb": ">=1.0.0",
+    "ext-json": "*",
+    "yiisoft/yii2": ">1.0.15",
+    "yiisoft/yii2-swiftmailer": "~2.0.0 || ~2.1.0",
+    "yii2mod/yii2-settings": "2.5",
+    "aminkt/yii2-oauth2": "v0.0.1.x-dev",
+    "aminkt/yii2-mongodb": "v0.0.1.x-dev",
+    "aminkt/normalizer": "^1.0",
+    "aminkt/yii2-rest": "v1.0.0.x-dev",
+    "aminkt/yii2-meta-activerecord": "v1.0.0.x-dev",
+    "saghar/yii2-address-module": "dev-master"
+  },
+  "require-dev": {
+    "yiisoft/yii2-debug": "~2.0.0",
+    "yiisoft/yii2-gii": "~2.0.0",
+    "yiisoft/yii2-faker": "~2.0.0",
+    "codeception/codeception": "^2.5",
+    "codeception/specify": "^1.1",
+    "codeception/verify": "^1.0"
+  },
+  "config": {
+    "process-timeout": 1800,
+    "discard-changes": true,
+    "fxp-asset": {
+      "enabled": false
+    },
+    "github-oauth": {
+    }
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://asset-packagist.org"
+    }
+  ]
+}

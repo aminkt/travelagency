@@ -1,0 +1,31 @@
+version: "2"
+services:
+    api:
+      build:
+        dockerfile: core/environments/docker/development/Dockerfile
+        context: .
+      container_name: "travel-agency-api"
+      restart: always
+      ports:
+        - 80:80
+      tty: true
+      volumes:
+        - .:/app
+        - ./core/environments/docker/config/nginx.conf:/etc/nginx/sites-enabled/api.travelagency
+      depends_on:
+        - mysql
+      links:
+        - mysql
+    mysql:
+      container_name: "travel-agency-mysql"
+      image: mysql:5.7.23
+#      restart: always
+      ports:
+        - "3306:3306"
+#      volumes:
+#        - ./tmp/mysql:/var/lib/mysql
+      environment:
+        MYSQL_DATABASE: travelagency_test
+        MYSQL_USER: user
+        MYSQL_PASSWORD: user
+        MYSQL_ROOT_PASSWORD: root

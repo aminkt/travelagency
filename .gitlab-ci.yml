@@ -1,0 +1,132 @@
+image: docker:latest
+services:
+  - docker:dind
+
+stages:
+  - build
+  - test
+  - release
+  - deploy
+
+variables:
+  TEST_IMAGE: registry.gitlab.com/aminkt/travelagency/api:$CI_COMMIT_REF_NAME
+  STABLE_IMAGE: registry.gitlab.com/aminkt/travelagency/api:latest
+  DEMO_IMAGE: registry.gitlab.com/aminkt/travelagency/api:develop
+  RELEASE_IMAGE: repo.treescale.com/aminkt/travelagency-api:latest
+  INIT_ENV: "Development"
+  DEPLOY_REGISTRY: repo.treescale.com
+
+build:
+  stage: build
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+  script:
+    - docker build --pull -t "$TEST_IMAGE" -f core/environments/docker/development/Dockerfile .
+    - docker push $TEST_IMAGE
+
+unit_tests:
+  image:
+    name: "registry.gitlab.com/aminkt/travelagency/api:$CI_COMMIT_REF_NAME"
+    entrypoint: [""]
+  stage: test
+  services:
+    - docker:dind
+    - name: mysql:5.7.23
+      alias: mysql
+    - name: mongo:latest
+      alias: mongodb
+  variables:
+    MYSQL_DATABASE: travelagency_test
+    MYSQL_USER: user
+    MYSQL_PASSWORD: user
+    MYSQL_ROOT_PASSWORD: root
+
+    MONGO_DATA_DIR: /data/db
+    MONGO_LOG_DIR: /dev/null
+  script:
+    - cd /app && composer update
+    - cd /app && php core/init --env=$INIT_ENV --overwrite=y && /bin/bash
+    - cd /app && php core/yii_test migrate --interactive=0
+    - cd /app && vendor/bin/codecept -c core/common run -vvv
+    - cd /app && vendor/bin/codecept -c core/rest run unit -vvv
+
+api_tests:
+  image:
+    name: "registry.gitlab.com/aminkt/travelagency/api:$CI_COMMIT_REF_NAME"
+    entrypoint: [""]
+  stage: test
+  services:
+    - docker:dind
+    - name: mysql:5.7.23
+      alias: mysql
+    - name: mongo:latest
+      alias: mongodb
+  variables:
+    MYSQL_DATABASE: travelagency_test
+    MYSQL_USER: user
+    MYSQL_PASSWORD: user
+    MYSQL_ROOT_PASSWORD: root
+
+    MONGO_DATA_DIR: /data/db
+    MONGO_LOG_DIR: /dev/null
+  script:
+    - cd /app && composer update
+    - cd /app && php core/init --env=$INIT_ENV --overwrite=y && /bin/bash
+    - cd /app && php core/yii_test migrate --interactive=0
+    - cd /app && vendor/bin/codecept -c core/rest run api -vvv
+
+stable:
+  stage: release
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+  script:
+    - docker build --pull -t "$STABLE_IMAGE" -f core/environments/docker/production/Dockerfile .
+    - docker push $STABLE_IMAGE
+  only:
+    - master
+
+demo-deploy:
+  environment:
+    name: development
+    url: http://demo-api.travelagency.ir/
+  image: ubuntu:latest
+  stage: deploy
+  only:
+    - develop
+  before_script:
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    ## Install rsync to create mirror between runner and host.
+    - apt-get install -y rsync
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - eval $(ssh-agent -s)
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    # - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+    - ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - ssh-add <(echo "$SSH_PRIVATE_KEY" | base64 --decode)
+    - ssh -o StrictHostKeyChecking=no $SSH_USER@"$SSH_HOST" "cd ~/demo-api && docker-compose pull && docker-compose up -d && sh bin/demo-eploy.sh '$CONFIG_DEMO_DB_HOST' '$CONFIG_DEMO_DB_NAME' '$CONFIG_DEMO_DB_USERNAME' '$CONFIG_DEMO_DB_PASSWORD'"
+
+deploy:
+  environment:
+    name: production
+    url: http://api.travelagency.ir/
+  image: ubuntu:latest
+  stage: deploy
+  only:
+    - master
+  before_script:
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    ## Install rsync to create mirror between runner and host.
+    - apt-get install -y rsync
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - eval $(ssh-agent -s)
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    # - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+    - ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - ssh-add <(echo "$SSH_PRIVATE_KEY" | base64 --decode)
+    - ssh -o StrictHostKeyChecking=no $SSH_USER@"$SSH_HOST" "cd ~/api && docker-compose pull && docker-compose up -d && sh bin/deploy.sh '$CONFIG_DB_HOST' '$CONFIG_DB_NAME' '$CONFIG_DB_USERNAME' '$CONFIG_DB_PASSWORD'"

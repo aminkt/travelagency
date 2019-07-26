@@ -1,0 +1,16 @@
+.git
+.gitlab-ci.yml
+vendor
+core/rest/runtime/*
+core/console/runtime/*
+core/log/*
+core/common/tests/_output/*
+core/rest/tests/_output/*
+upload/*
+core/environments/docker
+assets/*
+docker-compose.yml
+docker-compose-deploy.yml
+readme.md
+.idea
+tmp

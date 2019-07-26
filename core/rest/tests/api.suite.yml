@@ -1,0 +1,15 @@
+actor: ApiTester
+modules:
+    enabled:
+        - Asserts
+        - Yii2:
+            cleanup: true
+            transaction: true
+          part: [orm, email, fixtures]
+        - REST:
+            url: /
+            depends: Yii2
+        - \rest\tests\Helper\AccessHelper
+        - \rest\tests\Helper\ApiHelper
+    config:
+        - Yii2
